@@ -119,7 +119,7 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
                 <input type="hidden" name="id" value={gen.id} />
                 <button
                   type="submit"
-                  className="w-full rounded-2xl border-4 border-ink bg-toy-red px-6 py-4 font-display text-lg text-white toy-shadow transition active:translate-x-1 active:translate-y-1 active:shadow-none"
+                  className="cursor-paw w-full rounded-2xl border-4 border-ink bg-toy-red px-6 py-4 font-display text-lg text-white toy-shadow transition active:translate-x-1 active:translate-y-1 active:shadow-none"
                 >
                   Unlock HD · {PRICE}
                 </button>
