@@ -52,6 +52,21 @@ export default function GeneratorForm() {
     progressRef.current.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
   }, [busy]);
 
+  // Error messages sit near the bottom of the form, often off-screen (e.g. after the progress
+  // card disappears), so scroll each one into view. The counter re-triggers this even when
+  // the same message is shown twice in a row.
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  const [errorCount, setErrorCount] = useState(0);
+  function fail(message: string) {
+    setError(message);
+    setErrorCount((n) => n + 1);
+  }
+  useEffect(() => {
+    if (!errorCount || !errorRef.current) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    errorRef.current.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  }, [errorCount]);
+
   // Next.js keeps this page alive (hidden) after navigating to the result page, so the
   // "building" state would still be showing when the user comes back. Once a generation
   // has succeeded, clear it as the page is hidden. The photo, framing, name and age are
@@ -70,8 +85,8 @@ export default function GeneratorForm() {
   function pickFile(f: File | undefined) {
     setError(null);
     if (!f) return;
-    if (!f.type.startsWith("image/")) return setError("That doesn't look like a photo.");
-    if (f.size > MAX_ORIGINAL_BYTES) return setError("Photo must be under 25 MB.");
+    if (!f.type.startsWith("image/")) return fail("That doesn't look like a photo.");
+    if (f.size > MAX_ORIGINAL_BYTES) return fail("Photo must be under 25 MB.");
     setFraming(DEFAULT_FRAMING);
     setPhotoSize(null);
     setFile(f);
@@ -84,15 +99,15 @@ export default function GeneratorForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!file) return setError("Add a photo of your pet first.");
-    if (!petName.trim()) return setError("What's your pet's name?");
-    if (!photoSize || !previewSrc) return setError("Your photo is still loading. Try again in a second.");
+    if (!file) return fail("Add a photo of your pet first.");
+    if (!petName.trim()) return fail("What's your pet's name?");
+    if (!photoSize || !previewSrc) return fail("Your photo is still loading. Try again in a second.");
 
     // Send only the framed area; fall back to the original if this browser can't crop it.
     const cropped = photoSize === "unsupported" ? null : await cropToFile(previewSrc, photoSize, framing);
     const photo = cropped ?? file;
     if (!cropped && photo.size > MAX_UPLOAD_BYTES) {
-      return setError("This photo is too large to send as-is. Try a JPG or PNG under 10 MB.");
+      return fail("This photo is too large to send as-is. Try a JPG or PNG under 10 MB.");
     }
 
     const body = new FormData();
@@ -110,7 +125,7 @@ export default function GeneratorForm() {
       resetAfterSuccess.current = true;
       router.push(`/result/${json.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      fail(err instanceof Error ? err.message : "Something went wrong.");
       setBusy(false);
     }
   }
@@ -255,7 +270,11 @@ export default function GeneratorForm() {
       </fieldset>
 
       {error && (
-        <p className="mt-5 rounded-xl border-2 border-toy-red bg-toy-red/10 px-4 py-3 text-sm font-semibold text-toy-red" role="alert">
+        <p
+          ref={errorRef}
+          className="mt-5 rounded-xl border-2 border-toy-red bg-toy-red/10 px-4 py-3 text-sm font-semibold text-toy-red"
+          role="alert"
+        >
           {error}
         </p>
       )}
