@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { fal } from "@fal-ai/client";
+import { after } from "next/server";
+import { checkCapAlerts } from "@/lib/alerts";
 import { composeCard } from "@/lib/composeCard";
 import { buildPrompt, getPreset } from "@/lib/presets";
 import { clientIp, releaseGeneration, reserveGeneration } from "@/lib/rateLimit";
@@ -46,9 +48,18 @@ export async function POST(request: Request) {
   try {
     const rl = await reserveGeneration(ip);
     if (!rl.allowed) {
+      if (rl.reason === "global") {
+        console.warn("[generate] site-wide daily cap reached");
+        const { cap, salesToday } = rl;
+        after(() => checkCapAlerts(cap, cap, salesToday, true));
+        return bad(503, "We're very busy today and have paused new previews. Please try again tomorrow!");
+      }
       return bad(429, "You've used your 2 free figures for today. Come back tomorrow!", { remaining: 0 });
     }
     reserved = true;
+    // Email the owner at 80% / 100% of the daily cap (once per level per day), after responding.
+    const { globalUsed, cap, salesToday } = rl;
+    after(() => checkCapAlerts(globalUsed, cap, salesToday, false));
 
     // 3. Generate with fal.
     const photoUrl = await fal.storage.upload(photo);

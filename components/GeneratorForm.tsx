@@ -266,7 +266,7 @@ export default function GeneratorForm() {
               role="tab"
               aria-selected={tab === t.id}
               onClick={() => setTab(t.id)}
-              className={`truncate rounded-full border-2 px-1 py-1 text-center text-[11px] font-bold transition sm:px-2 sm:text-xs ${
+              className={`truncate rounded-full border-2 px-1 py-1 text-center text-[11px] font-bold transition lg:px-2 lg:text-xs ${
                 tab === t.id ? "border-ink bg-ink text-white" : "border-ink/20 bg-white hover:border-ink/60"
               }`}
             >

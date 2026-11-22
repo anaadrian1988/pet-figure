@@ -2,6 +2,7 @@ import "server-only";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendFigureUnlockedEmail } from "@/lib/email";
+import { recordSale } from "@/lib/rateLimit";
 
 let client: Stripe | null = null;
 
@@ -34,6 +35,9 @@ export async function markPaidFromSession(session: Stripe.Checkout.Session): Pro
 
   const updated = data?.[0];
   if (!updated) return false;
+
+  // Only the call that actually unlocked the figure counts the sale (raises today's preview cap).
+  await recordSale();
 
   const email = session.customer_details?.email ?? session.customer_email;
   if (email) {
