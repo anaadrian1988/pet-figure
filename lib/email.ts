@@ -1,0 +1,84 @@
+import "server-only";
+import { Resend } from "resend";
+
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/**
+ * Emails the buyer permanent links to their unlocked figure, so they can get it again
+ * on any device. Skipped (with a log line) when RESEND_API_KEY or EMAIL_FROM isn't set.
+ * Never throws: a failed email must not fail the payment flow.
+ */
+export async function sendFigureUnlockedEmail({ to, petName, figureId }: { to: string; petName: string; figureId: string }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  if (!apiKey || !from) {
+    console.info("[email] RESEND_API_KEY or EMAIL_FROM not set; skipping unlock email");
+    return;
+  }
+
+  const site = (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
+  const pageUrl = `${site}/result/${figureId}`;
+  const downloadUrl = `${site}/api/download/${figureId}`;
+  const name = esc(petName);
+
+  const html = `<!doctype html>
+<html>
+  <body style="margin:0;background:#fff6e5;font-family:Arial,Helvetica,sans-serif;color:#141414">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px">
+      <tr><td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:4px solid #141414;border-radius:16px">
+          <tr><td style="background:#e5262e;border-radius:12px 12px 0 0;padding:20px 24px;color:#ffffff;font-size:22px;font-weight:900">
+            ${name} is ready! 🎉
+          </td></tr>
+          <tr><td style="padding:24px">
+            <p style="margin:0 0 16px;font-size:16px;line-height:1.5">
+              Thanks for your order. Your HD action figure of <strong>${name}</strong> is unlocked: no watermark, ready to print, frame or share.
+            </p>
+            <p style="margin:0 0 24px">
+              <a href="${downloadUrl}" style="display:inline-block;background:#e5262e;color:#ffffff;text-decoration:none;font-weight:900;padding:14px 22px;border:3px solid #141414;border-radius:12px">
+                Download HD PNG
+              </a>
+            </p>
+            <p style="margin:0 0 8px;font-size:14px;line-height:1.5">
+              Keep this email: these links work any time, on any device.
+            </p>
+            <p style="margin:0;font-size:14px;line-height:1.5">
+              View your figure: <a href="${pageUrl}" style="color:#e5262e">${pageUrl}</a>
+            </p>
+          </td></tr>
+        </table>
+        <p style="font-size:12px;color:#666;margin:16px 0 0">PetFigure · You're receiving this because you bought a figure.</p>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+
+  const text = `${petName} is ready!
+
+Thanks for your order. Your HD action figure of ${petName} is unlocked.
+
+Download HD PNG: ${downloadUrl}
+View your figure: ${pageUrl}
+
+Keep this email: these links work any time, on any device.`;
+
+  try {
+    const { error } = await new Resend(apiKey).emails.send(
+      {
+        from,
+        to,
+        subject: `${petName} is ready! Your HD action figure 🎉`,
+        html,
+        text,
+        ...(process.env.EMAIL_REPLY_TO ? { replyTo: process.env.EMAIL_REPLY_TO } : {}),
+      },
+      // Stripe can deliver the same event more than once; never send the same email twice.
+      { idempotencyKey: `figure-unlocked/${figureId}` },
+    );
+    if (error) console.error("[email] Resend error", error);
+  } catch (err) {
+    console.error("[email] failed to send unlock email", err);
+  }
+}

@@ -1,6 +1,7 @@
 import "server-only";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabase";
+import { sendFigureUnlockedEmail } from "@/lib/email";
 
 let client: Stripe | null = null;
 
@@ -15,8 +16,9 @@ export function stripe(): Stripe {
 }
 
 /**
- * Marks a generation as paid if the Checkout Session is paid and belongs to it.
- * Safe to call more than once (webhook and success redirect may both call it).
+ * Marks a generation as paid if the Checkout Session is paid and belongs to it, then emails
+ * the buyer their links. Safe to call more than once (webhook and success redirect may both
+ * call it): only the call that actually flips is_paid sends the email.
  */
 export async function markPaidFromSession(session: Stripe.Checkout.Session): Promise<boolean> {
   const generationId = session.metadata?.generation_id ?? session.client_reference_id;
@@ -27,7 +29,17 @@ export async function markPaidFromSession(session: Stripe.Checkout.Session): Pro
     .update({ is_paid: true, paid_at: new Date().toISOString(), order_id: session.id })
     .eq("id", generationId)
     .eq("is_paid", false)
-    .select("id");
+    .select("id, pet_name");
   if (error) throw error;
-  return (data?.length ?? 0) > 0;
+
+  const updated = data?.[0];
+  if (!updated) return false;
+
+  const email = session.customer_details?.email ?? session.customer_email;
+  if (email) {
+    await sendFigureUnlockedEmail({ to: email, petName: updated.pet_name, figureId: updated.id });
+  } else {
+    console.warn("[stripe] paid session without a customer email", session.id);
+  }
+  return true;
 }

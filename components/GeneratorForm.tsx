@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PRESETS } from "@/lib/presets";
 import PhotoFramer, { cropToFile, DEFAULT_FRAMING, type Framing } from "@/components/PhotoFramer";
+import { rememberFigure } from "@/lib/myFigures";
 
 /** Originals can be large because we crop and shrink them in the browser before upload. */
 const MAX_ORIGINAL_BYTES = 25 * 1024 * 1024;
@@ -122,6 +123,7 @@ export default function GeneratorForm() {
       const res = await fetch("/api/generate", { method: "POST", body });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error ?? "Something went wrong. Please try again.");
+      rememberFigure(json.id);
       resetAfterSuccess.current = true;
       router.push(`/result/${json.id}`);
     } catch (err) {

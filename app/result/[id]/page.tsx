@@ -7,6 +7,7 @@ import { getPreset } from "@/lib/presets";
 import { PRICE_LABEL } from "@/lib/price";
 import { startCheckout } from "./actions";
 import PaymentPoller from "./PaymentPoller";
+import MyFigures, { RememberFigure } from "@/components/MyFigures";
 import { markPaidFromSession, stripe } from "@/lib/stripe";
 
 const PRICE = PRICE_LABEL;
@@ -60,7 +61,9 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
   }
 
   return (
-    <section className="mx-auto grid max-w-5xl gap-8 px-4 pb-16 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-start">
+    <>
+    <RememberFigure id={gen.id} />
+    <section className="mx-auto grid max-w-5xl gap-8 px-4 pb-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-start">
       {/* Figure */}
       <div className="relative mx-auto w-full max-w-md">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -131,6 +134,11 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
         )}
       </div>
     </section>
+    {/* Other figures made in this browser: tap one to go back to it (and unlock it instead). */}
+    <div className="pb-16">
+      <MyFigures excludeId={gen.id} title="Your other figures" />
+    </div>
+    </>
   );
 }
 

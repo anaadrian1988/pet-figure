@@ -1,4 +1,5 @@
 import GeneratorForm from "@/components/GeneratorForm";
+import MyFigures from "@/components/MyFigures";
 import { PRICE_LABEL } from "@/lib/price";
 
 const PRICE = PRICE_LABEL;
@@ -84,6 +85,11 @@ export default function Home() {
           <GeneratorForm />
         </div>
       </section>
+
+      {/* Figures made earlier in this browser (renders nothing for first-time visitors) */}
+      <div className="pb-8">
+        <MyFigures title="Your figures" />
+      </div>
 
       {/* How it works */}
       <section className="border-y-4 border-ink bg-toy-yellow halftone">

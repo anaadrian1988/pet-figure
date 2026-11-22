@@ -67,6 +67,40 @@ type PathOptions = {
   letterSpacing?: number;
 };
 
+/** Number → compact SVG coordinate with at most 2 decimals (never exponent notation or NaN). */
+function num(v: number): string {
+  const r = Math.round(v * 100) / 100;
+  return Object.is(r, -0) ? "0" : r.toFixed(2).replace(/\.?0+$/, "");
+}
+
+/**
+ * Path → SVG `d` string, written directly from the outline commands.
+ * opentype.js's own toPathData() can't be used: its rounding turns coordinates with tiny
+ * floating-point errors (e.g. 489.00000000000006) into NaN, which made whole letters vanish
+ * (the "S" in "TEST"), and its object options silently flip the glyph vertically.
+ */
+function glyphPathData(p: ReturnType<Font["getPath"]>): string {
+  let d = "";
+  for (const c of p.commands) {
+    switch (c.type) {
+      case "M":
+      case "L":
+        d += `${c.type}${num(c.x)} ${num(c.y)}`;
+        break;
+      case "Q":
+        d += `Q${num(c.x1)} ${num(c.y1)} ${num(c.x)} ${num(c.y)}`;
+        break;
+      case "C":
+        d += `C${num(c.x1)} ${num(c.y1)} ${num(c.x2)} ${num(c.y2)} ${num(c.x)} ${num(c.y)}`;
+        break;
+      case "Z":
+        d += "Z";
+        break;
+    }
+  }
+  return d;
+}
+
 /** SVG path data (`d` attribute) drawing the text. */
 export function textPathData(text: string, { x, y, size, anchor = "middle", letterSpacing = 0 }: PathOptions): string {
   const f = getFont();
@@ -77,7 +111,7 @@ export function textPathData(text: string, { x, y, size, anchor = "middle", lett
 
   let d = "";
   glyphs.forEach((g, i) => {
-    d += g.getPath(cursor, y, size).toPathData(2);
+    d += glyphPathData(g.getPath(cursor, y, size));
     cursor += (g.advanceWidth ?? 0) * scale + letterSpacing;
     if (i < glyphs.length - 1) cursor += f.getKerningValue(g, glyphs[i + 1]) * scale;
   });
