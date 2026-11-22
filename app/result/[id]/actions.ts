@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type Stripe from "stripe";
 import { getGeneration } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe";
+import { PRICE_AMOUNT, PRICE_CURRENCY } from "@/lib/price";
 
 /** Creates a Stripe Checkout Session tied to this generation and redirects to it. */
 export async function startCheckout(formData: FormData) {
@@ -14,21 +15,18 @@ export async function startCheckout(formData: FormData) {
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-  // Use a Price from the Stripe dashboard if given, otherwise an inline price.
-  const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = process.env.STRIPE_PRICE_ID
-    ? { price: process.env.STRIPE_PRICE_ID, quantity: 1 }
-    : {
-        quantity: 1,
-        price_data: {
-          currency: process.env.STRIPE_CURRENCY ?? "usd",
-          unit_amount: Number(process.env.STRIPE_UNIT_AMOUNT ?? 499),
-          product_data: {
-            name: `${gen.pet_name} Action Figure (HD)`,
-            description: "Full-resolution 896×1152 PNG, no watermark",
-            images: [gen.preview_url],
-          },
-        },
-      };
+  const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = {
+    quantity: 1,
+    price_data: {
+      currency: PRICE_CURRENCY,
+      unit_amount: PRICE_AMOUNT,
+      product_data: {
+        name: `${gen.pet_name} Action Figure (HD)`,
+        description: "Full-resolution 896×1152 PNG, no watermark",
+        images: [gen.preview_url],
+      },
+    },
+  };
 
   const session = await stripe().checkout.sessions.create({
     mode: "payment",

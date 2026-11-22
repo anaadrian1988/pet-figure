@@ -4,11 +4,12 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getGeneration } from "@/lib/supabase";
 import { getPreset } from "@/lib/presets";
+import { PRICE_LABEL } from "@/lib/price";
 import { startCheckout } from "./actions";
 import PaymentPoller from "./PaymentPoller";
 import { markPaidFromSession, stripe } from "@/lib/stripe";
 
-const PRICE = process.env.NEXT_PUBLIC_PRICE_LABEL ?? "$4.99";
+const PRICE = PRICE_LABEL;
 
 export async function generateMetadata({ params }: PageProps<"/result/[id]">): Promise<Metadata> {
   const { id } = await params;

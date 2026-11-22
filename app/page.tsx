@@ -1,6 +1,7 @@
 import GeneratorForm from "@/components/GeneratorForm";
+import { PRICE_LABEL } from "@/lib/price";
 
-const PRICE = process.env.NEXT_PUBLIC_PRICE_LABEL ?? "$4.99";
+const PRICE = PRICE_LABEL;
 
 function MockCard({ name, emoji, tag, rotate, className = "" }: { name: string; emoji: string; tag: string; rotate: string; className?: string }) {
   return (
