@@ -7,7 +7,7 @@ import { HD_BUCKET, PREVIEW_BUCKET, supabaseAdmin } from "@/lib/supabase";
 
 export const maxDuration = 120;
 
-const FAL_MODEL_ID = process.env.FAL_MODEL_ID ?? "fal-ai/flux-3/klein/edit";
+const FAL_MODEL_ID = process.env.FAL_MODEL_ID ?? "blackforestlabs/flux-3/klein/edit-image";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 
@@ -60,6 +60,8 @@ export async function POST(request: Request) {
         output_format: "png",
         num_images: 1,
         enable_safety_checker: true,
+        // Use our prompt as written; fal would otherwise rewrite it.
+        enable_prompt_expansion: false,
       },
     });
     const output = result.data as FalImageOutput;
