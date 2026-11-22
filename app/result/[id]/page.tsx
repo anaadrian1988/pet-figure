@@ -7,6 +7,7 @@ import { getPreset } from "@/lib/presets";
 import { PRICE_LABEL } from "@/lib/price";
 import { startCheckout } from "./actions";
 import PaymentPoller from "./PaymentPoller";
+import AutoDownload from "./AutoDownload";
 import MyFigures, { RememberFigure } from "@/components/MyFigures";
 import { markPaidFromSession, stripe } from "@/lib/stripe";
 
@@ -84,6 +85,8 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
       {/* Offer */}
       <div className="md:sticky md:top-6">
         {gen.is_paid ? (
+          <div className="space-y-4">
+          {sp.download === "1" && <AutoDownload href={`/api/download/${gen.id}`} />}
           <div className="rounded-3xl border-4 border-ink bg-white p-6 toy-shadow-lg">
             <p className="font-display text-sm text-toy-red">Unlocked 🎉</p>
             <h1 className="mt-1 font-display text-3xl leading-tight">{gen.pet_name} is ready!</h1>
@@ -97,6 +100,7 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
             <Link href="/#make" className="mt-4 block text-center text-sm font-semibold underline underline-offset-4">
               Make another figure
             </Link>
+          </div>
           </div>
         ) : (
           <div className="space-y-4">

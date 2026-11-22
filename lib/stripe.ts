@@ -29,7 +29,7 @@ export async function markPaidFromSession(session: Stripe.Checkout.Session): Pro
     .update({ is_paid: true, paid_at: new Date().toISOString(), order_id: session.id })
     .eq("id", generationId)
     .eq("is_paid", false)
-    .select("id, pet_name");
+    .select("id, pet_name, hd_path");
   if (error) throw error;
 
   const updated = data?.[0];
@@ -37,7 +37,7 @@ export async function markPaidFromSession(session: Stripe.Checkout.Session): Pro
 
   const email = session.customer_details?.email ?? session.customer_email;
   if (email) {
-    await sendFigureUnlockedEmail({ to: email, petName: updated.pet_name, figureId: updated.id });
+    await sendFigureUnlockedEmail({ to: email, petName: updated.pet_name, figureId: updated.id, hdPath: updated.hd_path });
   } else {
     console.warn("[stripe] paid session without a customer email", session.id);
   }
