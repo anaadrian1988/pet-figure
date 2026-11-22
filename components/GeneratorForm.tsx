@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PRESETS } from "@/lib/presets";
 import PhotoFramer, { cropToFile, DEFAULT_FRAMING, type Framing } from "@/components/PhotoFramer";
@@ -33,8 +33,10 @@ export default function GeneratorForm() {
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const previewSrc = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
-  useEffect(() => () => void (previewSrc && URL.revokeObjectURL(previewSrc)), [previewSrc]);
+  // In-memory URL for showing the picked photo. It's released only when a different photo is
+  // picked, not in an effect cleanup: Next.js runs cleanups when it hides this page during
+  // navigation, which would break the photo when the user comes back.
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
   useEffect(() => {
     if (!busy) return;
@@ -50,6 +52,21 @@ export default function GeneratorForm() {
     progressRef.current.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
   }, [busy]);
 
+  // Next.js keeps this page alive (hidden) after navigating to the result page, so the
+  // "building" state would still be showing when the user comes back. Once a generation
+  // has succeeded, clear it as the page is hidden. The photo, framing, name and age are
+  // kept on purpose so "Try a different accessory pack" only needs a new pack.
+  const resetAfterSuccess = useRef(false);
+  useLayoutEffect(() => {
+    return () => {
+      if (!resetAfterSuccess.current) return;
+      resetAfterSuccess.current = false;
+      setBusy(false);
+      setStep(0);
+      setError(null);
+    };
+  }, []);
+
   function pickFile(f: File | undefined) {
     setError(null);
     if (!f) return;
@@ -58,6 +75,10 @@ export default function GeneratorForm() {
     setFraming(DEFAULT_FRAMING);
     setPhotoSize(null);
     setFile(f);
+    setPreviewSrc((old) => {
+      if (old) URL.revokeObjectURL(old);
+      return URL.createObjectURL(f);
+    });
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -86,6 +107,7 @@ export default function GeneratorForm() {
       const res = await fetch("/api/generate", { method: "POST", body });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error ?? "Something went wrong. Please try again.");
+      resetAfterSuccess.current = true;
       router.push(`/result/${json.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
