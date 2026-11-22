@@ -6,6 +6,7 @@ import { getGeneration } from "@/lib/supabase";
 import { getPreset } from "@/lib/presets";
 import { startCheckout } from "./actions";
 import PaymentPoller from "./PaymentPoller";
+import { markPaidFromSession, stripe } from "@/lib/stripe";
 
 const PRICE = process.env.NEXT_PUBLIC_PRICE_LABEL ?? "$4.99";
 
@@ -42,6 +43,20 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
 
   const preset = getPreset(gen.preset);
   const justPaid = sp.checkout === "success";
+
+  // Coming back from Stripe: confirm the session directly so the unlock doesn't wait on the webhook.
+  const sessionId = typeof sp.session_id === "string" ? sp.session_id : null;
+  if (!gen.is_paid && sessionId?.startsWith("cs_")) {
+    try {
+      const session = await stripe().checkout.sessions.retrieve(sessionId);
+      if (session.metadata?.generation_id === gen.id && session.payment_status === "paid") {
+        await markPaidFromSession(session);
+        gen.is_paid = true;
+      }
+    } catch (err) {
+      console.error("[result] could not confirm Stripe session", err);
+    }
+  }
 
   return (
     <section className="mx-auto grid max-w-5xl gap-8 px-4 pb-16 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-start">
@@ -105,7 +120,7 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
                   Unlock HD · {PRICE}
                 </button>
               </form>
-              <p className="mt-3 text-center text-xs text-ink/60">One-time payment · Secure checkout by Lemon Squeezy</p>
+              <p className="mt-3 text-center text-xs text-ink/60">One-time payment · Secure checkout by Stripe</p>
             </div>
 
             <Link href="/#make" className="block text-center text-sm font-semibold underline underline-offset-4">

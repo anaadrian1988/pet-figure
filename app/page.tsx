@@ -111,7 +111,7 @@ export default function Home() {
           {[
             ["🆓", "Free preview", "No card, no sign-up"],
             ["⚡", "~30 seconds", "From photo to figure"],
-            ["🔒", "Secure checkout", "Powered by Lemon Squeezy"],
+            ["🔒", "Secure checkout", "Powered by Stripe"],
             ["🖼️", "Print-ready HD", "Instant PNG download"],
           ].map(([icon, title, body]) => (
             <li key={title} className="rounded-2xl border-4 border-ink bg-white p-4 text-center">
