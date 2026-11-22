@@ -63,16 +63,18 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
   return (
     <>
     <RememberFigure id={gen.id} />
-    <section className="mx-auto grid max-w-5xl gap-8 px-4 pb-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-start">
+    {/* On desktop the figure is sized to the window height so the figure and the offer
+        fit on one screen side by side; no pinned panel scrolling past a taller image. */}
+    <section className="mx-auto grid max-w-5xl gap-8 px-4 pb-10 md:grid-cols-[auto_minmax(0,1fr)] md:items-center md:gap-10">
       {/* Figure */}
-      <div className="relative mx-auto w-full max-w-md">
+      <div className="relative mx-auto w-full max-w-md md:w-auto md:max-w-none">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={gen.preview_url}
           alt={`${gen.pet_name} as a ${preset?.label ?? ""} action figure`}
           width={896}
           height={1152}
-          className="w-full rounded-3xl border-4 border-ink bg-white toy-shadow-lg"
+          className="w-full rounded-3xl border-4 border-ink bg-white toy-shadow-lg md:h-[min(calc(100svh-8rem),40rem)] md:w-auto"
         />
         {!gen.is_paid && (
           <span className="absolute -right-2 -top-3 rotate-6 rounded-full border-2 border-ink bg-toy-yellow px-3 py-1 text-xs font-black uppercase">
@@ -82,7 +84,7 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
       </div>
 
       {/* Offer */}
-      <div className="md:sticky md:top-6">
+      <div className="md:max-w-md">
         {gen.is_paid ? (
           <div className="rounded-3xl border-4 border-ink bg-white p-6 toy-shadow-lg">
             <p className="font-display text-sm text-toy-red">Unlocked 🎉</p>
@@ -144,9 +146,9 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
 
 function ResultSkeleton() {
   return (
-    <section className="mx-auto grid max-w-5xl gap-8 px-4 pb-16 md:grid-cols-2">
-      <div className="mx-auto aspect-[896/1152] w-full max-w-md animate-pulse rounded-3xl border-4 border-ink/20 bg-white" />
-      <div className="h-80 animate-pulse rounded-3xl border-4 border-ink/20 bg-white" />
+    <section className="mx-auto grid max-w-5xl gap-8 px-4 pb-16 md:grid-cols-[auto_minmax(0,1fr)] md:items-center md:gap-10">
+      <div className="mx-auto aspect-[896/1152] w-full max-w-md animate-pulse rounded-3xl border-4 border-ink/20 bg-white md:h-[min(calc(100svh-8rem),40rem)] md:w-auto" />
+      <div className="h-80 animate-pulse rounded-3xl border-4 border-ink/20 bg-white md:max-w-md" />
     </section>
   );
 }
