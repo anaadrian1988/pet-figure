@@ -2,7 +2,16 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PRESETS } from "@/lib/presets";
+import { CATEGORIES, POPULAR_PACK_IDS, PRESETS, type PackCategory } from "@/lib/presets";
+
+type PackTab = "popular" | PackCategory;
+const PACK_TABS: { id: PackTab; label: string }[] = [{ id: "popular", label: "Popular" }, ...CATEGORIES];
+
+function packsInTab(tab: PackTab) {
+  return tab === "popular"
+    ? POPULAR_PACK_IDS.map((id) => PRESETS.find((p) => p.id === id)!).filter(Boolean)
+    : PRESETS.filter((p) => p.category === tab);
+}
 import PhotoFramer, { cropToFile, DEFAULT_FRAMING, type Framing } from "@/components/PhotoFramer";
 import { rememberFigure } from "@/lib/myFigures";
 
@@ -30,6 +39,7 @@ export default function GeneratorForm() {
   const [petName, setPetName] = useState("");
   const [age, setAge] = useState("");
   const [preset, setPreset] = useState(PRESETS[0].id);
+  const [tab, setTab] = useState<PackTab>("popular");
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -246,8 +256,27 @@ export default function GeneratorForm() {
       {/* Step 3: preset */}
       <fieldset className="mt-6">
         <legend className="mb-2 font-display text-sm">3 · Accessory pack</legend>
-        <div className="grid grid-cols-3 gap-2">
-          {PRESETS.map((p) => (
+
+        {/* Category tabs keep the list short: only one group of packs shows at a time. */}
+        <div className="mb-3 grid grid-cols-3 gap-1.5" role="tablist" aria-label="Pack categories">
+          {PACK_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              onClick={() => setTab(t.id)}
+              className={`truncate rounded-full border-2 px-1 py-1 text-center text-[11px] font-bold transition sm:px-2 sm:text-xs ${
+                tab === t.id ? "border-ink bg-ink text-white" : "border-ink/20 bg-white hover:border-ink/60"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-3 gap-2" role="tabpanel">
+          {packsInTab(tab).map((p) => (
             <label
               key={p.id}
               className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border-4 px-1 py-3 text-center text-xs font-bold transition ${
