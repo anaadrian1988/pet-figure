@@ -47,7 +47,7 @@ export default function MyFigures({ excludeId, title }: Props) {
         <h2 className="font-display text-lg">{title}</h2>
         <p className="text-xs text-ink/60">Saved on this device</p>
       </div>
-      <ul className="-mx-4 mt-3 flex snap-x gap-3 overflow-x-auto px-4 pb-3">
+      <ul className="-mx-4 mt-1 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-3 pt-3">
         {shown.map((f) => (
           <li key={f.id} className="relative w-28 shrink-0 snap-start sm:w-32">
             <Link
