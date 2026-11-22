@@ -42,6 +42,14 @@ export default function GeneratorForm() {
     return () => clearInterval(t);
   }, [busy]);
 
+  // The progress card is much shorter than the form it replaces, so bring it into view.
+  const progressRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!busy || !progressRef.current) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    progressRef.current.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  }, [busy]);
+
   function pickFile(f: File | undefined) {
     setError(null);
     if (!f) return;
@@ -87,7 +95,12 @@ export default function GeneratorForm() {
 
   if (busy) {
     return (
-      <div className="rounded-3xl border-4 border-ink bg-white p-8 text-center toy-shadow-lg" role="status" aria-live="polite">
+      <div
+        ref={progressRef}
+        className="scroll-mt-4 rounded-3xl border-4 border-ink bg-white p-8 text-center toy-shadow-lg"
+        role="status"
+        aria-live="polite"
+      >
         <div className="mx-auto mb-5 grid h-24 w-24 place-items-center rounded-2xl border-4 border-ink bg-toy-yellow text-5xl animate-wiggle">
           {PRESETS.find((p) => p.id === preset)?.emoji ?? "🐾"}
         </div>

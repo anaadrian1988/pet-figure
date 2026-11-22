@@ -1,5 +1,6 @@
 import "server-only";
 import sharp, { type OverlayOptions } from "sharp";
+import { capHeight, drawableText, fitFontSize, measureText, textPathData } from "@/lib/textPath";
 
 export const CARD_WIDTH = 896;
 export const CARD_HEIGHT = 1152;
@@ -10,7 +11,7 @@ export type ComposeCardOptions = {
   petName: string;
   /** Short line shown in the starburst badge, e.g. "Super Hero Edition". */
   tagline: string;
-  /** Text for the age badge, e.g. "AGES 3+" or "AGE 4". */
+  /** Text for the age badge, e.g. "3+" or "4". */
   ageLabel: string;
   /** Adds a diagonal repeating "PREVIEW" watermark across the card. */
   watermark?: boolean;
@@ -18,27 +19,13 @@ export type ComposeCardOptions = {
   format?: "png" | "webp" | "jpeg";
 };
 
-function esc(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
+/**
+ * All text on the card is converted to vector paths with a bundled font (see lib/textPath.ts),
+ * so the result doesn't depend on fonts being installed on the server.
+ */
 
-/** Shrinks the font so long names still fit in the header. */
-function nameFontSize(name: string): number {
-  const len = [...name].length;
-  if (len <= 6) return 104;
-  if (len <= 9) return 88;
-  if (len <= 12) return 70;
-  if (len <= 16) return 56;
-  return 46;
-}
-
-/** Points for an N-pointed starburst centred on (cx, cy). */
-function starburst(cx: number, cy: number, outer: number, inner: number, points = 16): string {
+/** Points for an N-pointed star or starburst centred on (cx, cy). */
+function starPoints(cx: number, cy: number, outer: number, inner: number, points: number): string {
   const pts: string[] = [];
   for (let i = 0; i < points * 2; i++) {
     const r = i % 2 === 0 ? outer : inner;
@@ -48,22 +35,58 @@ function starburst(cx: number, cy: number, outer: number, inner: number, points 
   return pts.join(" ");
 }
 
-const DISPLAY_FONT = "'Arial Black', 'Helvetica Neue', Impact, Arial, sans-serif";
+/** Splits a tagline into one or two balanced lines for the starburst. */
+function taglineLines(tag: string): string[] {
+  const words = tag.split(" ");
+  if (words.length < 2 || tag.length <= 9) return [tag];
+  let best = [tag];
+  let bestDiff = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(" ");
+    const b = words.slice(i).join(" ");
+    const diff = Math.abs(a.length - b.length);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = [a, b];
+    }
+  }
+  return best;
+}
 
 function headerSvg({ petName, tagline, ageLabel }: ComposeCardOptions): string {
-  const name = esc(petName.toUpperCase());
-  const tag = esc(tagline.toUpperCase());
-  const age = esc(ageLabel.toUpperCase());
-  const fs = nameFontSize(petName);
   const W = CARD_WIDTH;
+  const name = drawableText(petName.toUpperCase()) || "MY PET";
+  const tag = drawableText(tagline.toUpperCase());
+  const age = drawableText(ageLabel.toUpperCase()) || "3+";
 
-  // Split the tagline over two lines inside the starburst if it is long.
-  const words = tag.split(" ");
-  const mid = Math.ceil(words.length / 2);
-  const tagLines =
-    words.length >= 2 && tag.length > 9 ? [words.slice(0, mid).join(" "), words.slice(mid).join(" ")] : [tag];
-  const longest = Math.max(...tagLines.map((l) => l.length));
-  const tagFs = Math.min(26, Math.floor(150 / (longest * 0.72)));
+  // "★ COLLECTOR SERIES ★" kicker (stars drawn as shapes; the font has no ★).
+  const kickerSize = 22;
+  const kickerSpacing = 5;
+  const kickerBaseline = 92;
+  const kicker = "COLLECTOR SERIES";
+  const kickerHalf = measureText(kicker, kickerSize, kickerSpacing) / 2;
+  const kickerMid = kickerBaseline - capHeight(kickerSize) / 2;
+
+  // Pet name: as large as fits on one line; long names with spaces wrap onto two lines.
+  const nameMaxWidth = W - 150;
+  const nameMid = 156;
+  const oneLineSize = fitFontSize(name, nameMaxWidth, 100, 8);
+  const twoLines = oneLineSize < 52 && name.includes(" ") ? taglineLines(name) : null;
+  const nameSize = twoLines
+    ? Math.min(54, ...twoLines.map((l) => fitFontSize(l, nameMaxWidth, 54, 8)))
+    : oneLineSize;
+  const nameLines = twoLines ?? [name];
+  const nameGap = nameSize * 1.12;
+
+  // Tagline inside the starburst (top-right), up to two lines.
+  const burstX = W - 112;
+  const burstY = 300;
+  const lines = taglineLines(tag);
+  const tagSize = Math.min(...lines.map((l) => fitFontSize(l, 132, 24, 11)));
+  const lineGap = tagSize * 1.25;
+
+  // Age badge (bottom-left).
+  const ageSize = fitFontSize(age, 118, 40, 16);
 
   return `
 <svg width="${W}" height="${CARD_HEIGHT}" viewBox="0 0 ${W} ${CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
@@ -93,31 +116,39 @@ function headerSvg({ petName, tagline, ageLabel }: ComposeCardOptions): string {
   <rect x="${W / 2 - 70}" y="30" width="140" height="30" rx="15" fill="#111" fill-opacity="0.85"/>
   <rect x="${W / 2 - 52}" y="38" width="104" height="14" rx="7" fill="#c81d25"/>
 
-  <!-- "Collector series" kicker -->
-  <text x="${W / 2}" y="92" text-anchor="middle" font-family="${DISPLAY_FONT}" font-size="22" font-weight="900" letter-spacing="6" fill="#ffd60a">★ COLLECTOR SERIES ★</text>
+  <!-- Kicker -->
+  <path d="${textPathData(kicker, { x: W / 2, y: kickerBaseline, size: kickerSize, letterSpacing: kickerSpacing })}" fill="#ffd60a"/>
+  <polygon points="${starPoints(W / 2 - kickerHalf - 22, kickerMid, 11, 4.5, 5)}" fill="#ffd60a"/>
+  <polygon points="${starPoints(W / 2 + kickerHalf + 22, kickerMid, 11, 4.5, 5)}" fill="#ffd60a"/>
 
   <!-- Pet name -->
   <g filter="url(#shadow)">
-    <text x="${W / 2}" y="${92 + fs * 0.95}" text-anchor="middle" font-family="${DISPLAY_FONT}" font-size="${fs}" font-weight="900" fill="#ffffff" stroke="#111" stroke-width="10" paint-order="stroke" stroke-linejoin="round">${name}</text>
-  </g>
-
-  <!-- Tagline starburst (top-right) -->
-  <g transform="rotate(12 ${W - 112} 300)">
-    <polygon points="${starburst(W - 112, 300, 96, 78, 18)}" fill="#ffd60a" stroke="#111" stroke-width="6" stroke-linejoin="round"/>
-    ${tagLines
-      .map(
-        (l, i) =>
-          `<text x="${W - 112}" y="${300 + (i - (tagLines.length - 1) / 2) * (tagFs + 6) + tagFs * 0.36}" text-anchor="middle" font-family="${DISPLAY_FONT}" font-size="${tagFs}" font-weight="900" fill="#111">${l}</text>`,
-      )
+    ${nameLines
+      .map((l, i) => {
+        const baseline = nameMid + (i - (nameLines.length - 1) / 2) * nameGap + capHeight(nameSize) / 2;
+        return `<path d="${textPathData(l, { x: W / 2, y: baseline, size: nameSize })}"
+      fill="#ffffff" stroke="#111" stroke-width="${nameSize > 60 ? 10 : 7}" paint-order="stroke" stroke-linejoin="round"/>`;
+      })
       .join("\n    ")}
   </g>
 
-  <!-- Age badge (bottom-left) -->
+  <!-- Tagline starburst -->
+  <g transform="rotate(12 ${burstX} ${burstY})">
+    <polygon points="${starPoints(burstX, burstY, 96, 78, 18)}" fill="#ffd60a" stroke="#111" stroke-width="6" stroke-linejoin="round"/>
+    ${lines
+      .map((l, i) => {
+        const baseline = burstY + (i - (lines.length - 1) / 2) * lineGap + capHeight(tagSize) / 2;
+        return `<path d="${textPathData(l, { x: burstX, y: baseline, size: tagSize })}" fill="#111"/>`;
+      })
+      .join("\n    ")}
+  </g>
+
+  <!-- Age badge -->
   <g transform="translate(46 ${CARD_HEIGHT - 150})">
     <rect width="150" height="104" rx="14" fill="#111"/>
     <rect x="6" y="6" width="138" height="92" rx="10" fill="#ffffff"/>
-    <text x="75" y="44" text-anchor="middle" font-family="${DISPLAY_FONT}" font-size="20" font-weight="900" fill="#c81d25" letter-spacing="2">AGE</text>
-    <text x="75" y="84" text-anchor="middle" font-family="${DISPLAY_FONT}" font-size="${age.length > 5 ? 26 : 36}" font-weight="900" fill="#111">${age}</text>
+    <path d="${textPathData("AGE", { x: 75, y: 30 + capHeight(18) / 2, size: 18, letterSpacing: 3 })}" fill="#c81d25"/>
+    <path d="${textPathData(age, { x: 75, y: 68 + capHeight(ageSize) / 2, size: ageSize })}" fill="#111"/>
   </g>
 </svg>`;
 }
@@ -125,18 +156,19 @@ function headerSvg({ petName, tagline, ageLabel }: ComposeCardOptions): string {
 function watermarkSvg(): string {
   const W = CARD_WIDTH;
   const H = CARD_HEIGHT;
-  const rows: string[] = [];
+  const word = textPathData("PREVIEW", { x: 0, y: 0, size: 68, anchor: "start", letterSpacing: 8 });
+  const uses: string[] = [];
   for (let y = -H; y < H * 2; y += 170) {
+    const offset = Math.round(y / 170) % 2 === 0 ? 0 : 320;
     for (let x = -W; x < W * 2; x += 640) {
-      const offset = (y / 170) % 2 === 0 ? 0 : 320;
-      rows.push(`<text x="${x + offset}" y="${y}">PREVIEW</text>`);
+      uses.push(`<use href="#wm" xlink:href="#wm" x="${x + offset}" y="${y}"/>`);
     }
   }
   return `
-<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-  <g transform="rotate(-30 ${W / 2} ${H / 2})" font-family="${DISPLAY_FONT}" font-size="72" font-weight="900"
-     fill="#ffffff" fill-opacity="0.38" stroke="#000000" stroke-opacity="0.22" stroke-width="2" letter-spacing="8">
-    ${rows.join("\n    ")}
+<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs><path id="wm" d="${word}"/></defs>
+  <g transform="rotate(-30 ${W / 2} ${H / 2})" fill="#ffffff" fill-opacity="0.38" stroke="#000000" stroke-opacity="0.22" stroke-width="2">
+    ${uses.join("\n    ")}
   </g>
 </svg>`;
 }
