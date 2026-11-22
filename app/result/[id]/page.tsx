@@ -121,7 +121,7 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
                   Unlock HD · {PRICE}
                 </button>
               </form>
-              <p className="mt-3 text-center text-xs text-ink/60">One-time payment · Secure checkout by Stripe</p>
+              <p className="mt-3 text-center text-xs text-ink/60">One-time payment · Secure checkout by Stripe · Pay in your local currency</p>
             </div>
 
             <Link href="/#make" className="block text-center text-sm font-semibold underline underline-offset-4">

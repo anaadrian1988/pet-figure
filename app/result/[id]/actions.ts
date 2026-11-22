@@ -37,6 +37,8 @@ export async function startCheckout(formData: FormData) {
     success_url: `${site}/result/${id}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${site}/result/${id}`,
     allow_promotion_codes: true,
+    // Lets buyers outside the US pay in their own currency (Stripe converts from USD).
+    adaptive_pricing: { enabled: true },
   });
 
   if (!session.url) throw new Error("Could not start checkout");
