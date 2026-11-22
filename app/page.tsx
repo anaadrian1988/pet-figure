@@ -7,7 +7,7 @@ const PRICE = PRICE_LABEL;
 function MockCard({ name, emoji, tag, rotate, className = "" }: { name: string; emoji: string; tag: string; rotate: string; className?: string }) {
   return (
     <div
-      className={`relative aspect-[896/1152] w-40 shrink-0 overflow-hidden rounded-2xl border-4 border-ink bg-toy-blue toy-shadow sm:w-48 md:w-[min(12rem,calc((100cqw+4rem)/3.3))] ${rotate} ${className}`}
+      className={`relative aspect-[896/1152] w-40 shrink-0 overflow-hidden rounded-2xl border-4 border-ink bg-toy-blue toy-shadow sm:w-48 md:w-[min(12rem,calc((100cqw+5.75rem)/3))] ${rotate} ${className}`}
       aria-hidden
     >
       <div className="bg-toy-red px-2 pb-3 pt-2 text-center [clip-path:polygon(0_0,100%_0,100%_80%,50%_100%,0_80%)]">
