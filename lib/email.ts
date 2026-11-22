@@ -20,8 +20,8 @@ async function hdAttachment(hdPath: string, petName: string) {
 }
 
 /**
- * Emails the buyer their unlocked figure: the HD PNG as an attachment, plus permanent links
- * to download and view it on any device. Skipped (with a log line) when RESEND_API_KEY or
+ * Emails the buyer their unlocked figure: the HD PNG as an attachment, plus a permanent link
+ * to its page (where it can be downloaded again on any device). Skipped (with a log line) when RESEND_API_KEY or
  * EMAIL_FROM isn't set. Never throws: a failed email must not fail the payment flow.
  */
 export async function sendFigureUnlockedEmail({
@@ -44,9 +44,6 @@ export async function sendFigureUnlockedEmail({
 
   const site = (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
   const pageUrl = `${site}/result/${figureId}`;
-  // Opens the figure's page, which starts the download itself. A direct file link is
-  // unreliable from email apps (in-app browsers and link scanners often drop the download).
-  const downloadUrl = `${site}/result/${figureId}?download=1`;
   const name = esc(petName);
 
   const html = `<!doctype html>
@@ -60,18 +57,15 @@ export async function sendFigureUnlockedEmail({
           </td></tr>
           <tr><td style="padding:24px">
             <p style="margin:0 0 16px;font-size:16px;line-height:1.5">
-              Thanks for your order. Your HD action figure of <strong>${name}</strong> is unlocked: no watermark, ready to print, frame or share.
+              Thanks for your order! Your HD action figure of <strong>${name}</strong> is attached to this email: no watermark, ready to print, frame or share.
             </p>
-            <p style="margin:0 0 24px">
-              <a href="${downloadUrl}" style="display:inline-block;background:#e5262e;color:#ffffff;text-decoration:none;font-weight:900;padding:14px 22px;border:3px solid #141414;border-radius:12px">
-                Download HD PNG
+            <p style="margin:0 0 16px">
+              <a href="${pageUrl}" style="display:inline-block;background:#e5262e;color:#ffffff;text-decoration:none;font-weight:900;padding:14px 22px;border:3px solid #141414;border-radius:12px">
+                View your figure
               </a>
             </p>
-            <p style="margin:0 0 8px;font-size:14px;line-height:1.5">
-              Your HD file is also attached to this email. Keep it: these links work any time, on any device.
-            </p>
-            <p style="margin:0;font-size:14px;line-height:1.5">
-              View your figure: <a href="${pageUrl}" style="color:#e5262e">${pageUrl}</a>
+            <p style="margin:0;font-size:13px;line-height:1.5;color:#555">
+              You can download it again from that page any time, on any device.
             </p>
           </td></tr>
         </table>
@@ -83,12 +77,10 @@ export async function sendFigureUnlockedEmail({
 
   const text = `${petName} is ready!
 
-Thanks for your order. Your HD action figure of ${petName} is unlocked.
+Thanks for your order! Your HD action figure of ${petName} is attached to this email.
 
-Download HD PNG: ${downloadUrl}
 View your figure: ${pageUrl}
-
-Your HD file is also attached to this email. Keep it: these links work any time, on any device.`;
+You can download it again from that page any time, on any device.`;
 
   const attachment = await hdAttachment(hdPath, petName);
 
