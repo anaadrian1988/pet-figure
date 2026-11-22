@@ -13,7 +13,7 @@ export async function startCheckout(formData: FormData) {
   if (!gen) throw new Error("Figure not found");
   if (gen.is_paid) redirect(`/result/${id}`);
 
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const site = (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
   const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = {
     quantity: 1,
