@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --cream: #fff6e5;
+  --ink: #141414;
+  --toy-red: #e5262e;
+  --toy-yellow: #ffd60a;
+  --toy-blue: #2563eb;
+}
+
+@theme inline {
+  --color-cream: var(--cream);
+  --color-ink: var(--ink);
+  --color-toy-red: var(--toy-red);
+  --color-toy-yellow: var(--toy-yellow);
+  --color-toy-blue: var(--toy-blue);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-bungee);
+}
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+}
+
+/* Chunky "toy" box shadow used on cards and buttons */
+.toy-shadow {
+  box-shadow: 4px 4px 0 0 var(--ink);
+}
+.toy-shadow-lg {
+  box-shadow: 8px 8px 0 0 var(--ink);
+}
+
+.halftone {
+  background-image: radial-gradient(rgba(20, 20, 20, 0.09) 1.5px, transparent 1.6px);
+  background-size: 14px 14px;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+.animate-wiggle {
+  animation: wiggle 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-wiggle { animation: none; }
+}
