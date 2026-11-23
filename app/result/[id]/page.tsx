@@ -1,12 +1,14 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { getGeneration } from "@/lib/supabase";
 import { getPreset } from "@/lib/presets";
 import { PRICE_LABEL } from "@/lib/price";
 import { startCheckout } from "./actions";
 import PaymentPoller from "./PaymentPoller";
+import { showWithdrawalNotice } from "@/lib/region";
 import MyFigures, { RememberFigure } from "@/components/MyFigures";
 import { markPaidFromSession, stripe } from "@/lib/stripe";
 
@@ -39,7 +41,10 @@ export default function ResultPage(props: PageProps<"/result/[id]">) {
 }
 
 async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
-  const [{ id }, sp] = await Promise.all([params, searchParams]);
+  const [{ id }, sp, requestHeaders] = await Promise.all([params, searchParams, headers()]);
+  // EU/EEA/UK visitors see a short note that the 14-day cancellation period ends on delivery.
+  // Locally, ?country=US previews the non-EU view (ignored in production).
+  const withdrawalNotice = showWithdrawalNotice(requestHeaders, typeof sp.country === "string" ? sp.country : null);
   const gen = await getGeneration(id);
   if (!gen) notFound();
 
@@ -127,6 +132,14 @@ async function Result({ params, searchParams }: PageProps<"/result/[id]">) {
                 </button>
               </form>
               <p className="mt-3 text-center text-xs text-ink/60">One-time payment · Secure checkout by Stripe · Pay in your local currency</p>
+              {withdrawalNotice && (
+                <>
+                  <hr className="mx-auto mt-2.5 w-2/3 border-ink/15" />
+                  <p className="mt-2.5 text-center text-xs text-ink">
+                    Delivered instantly: the 14-day cancellation period ends once your figure is unlocked.
+                  </p>
+                </>
+              )}
             </div>
 
             <Link href="/#make" className="block text-center text-sm font-semibold underline underline-offset-4">
