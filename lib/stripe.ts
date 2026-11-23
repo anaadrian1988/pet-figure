@@ -41,7 +41,13 @@ export async function markPaidFromSession(session: Stripe.Checkout.Session): Pro
 
   const email = session.customer_details?.email ?? session.customer_email;
   if (email) {
-    await sendFigureUnlockedEmail({ to: email, petName: updated.pet_name, figureId: updated.id, hdPath: updated.hd_path });
+    await sendFigureUnlockedEmail({
+      to: email,
+      petName: updated.pet_name,
+      figureId: updated.id,
+      hdPath: updated.hd_path,
+      withdrawalNotice: session.metadata?.eu_notice === "1",
+    });
   } else {
     console.warn("[stripe] paid session without a customer email", session.id);
   }

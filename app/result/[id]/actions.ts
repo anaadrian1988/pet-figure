@@ -1,10 +1,12 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type Stripe from "stripe";
 import { getGeneration } from "@/lib/supabase";
 import { stripe } from "@/lib/stripe";
 import { PRICE_AMOUNT, PRICE_CURRENCY } from "@/lib/price";
+import { showWithdrawalNotice } from "@/lib/region";
 
 /** Creates a Stripe Checkout Session tied to this generation and redirects to it. */
 export async function startCheckout(formData: FormData) {
@@ -12,6 +14,10 @@ export async function startCheckout(formData: FormData) {
   const gen = await getGeneration(id);
   if (!gen) throw new Error("Figure not found");
   if (gen.is_paid) redirect(`/result/${id}`);
+
+  // Same rule as the notice under the Unlock button, so the people who saw it also get the
+  // written confirmation in their unlock email.
+  const euNotice = showWithdrawalNotice(await headers());
 
   const site = (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
 
@@ -32,7 +38,7 @@ export async function startCheckout(formData: FormData) {
     mode: "payment",
     line_items: [lineItem],
     client_reference_id: id,
-    metadata: { generation_id: id },
+    metadata: { generation_id: id, eu_notice: euNotice ? "1" : "0" },
     payment_intent_data: { metadata: { generation_id: id } },
     success_url: `${site}/result/${id}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${site}/result/${id}`,

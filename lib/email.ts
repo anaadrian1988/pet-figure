@@ -29,11 +29,14 @@ export async function sendFigureUnlockedEmail({
   petName,
   figureId,
   hdPath,
+  withdrawalNotice = false,
 }: {
   to: string;
   petName: string;
   figureId: string;
   hdPath: string;
+  /** EU, EEA and UK buyers: confirm in writing that the 14-day cancellation period has ended. */
+  withdrawalNotice?: boolean;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
@@ -45,6 +48,9 @@ export async function sendFigureUnlockedEmail({
   const site = (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/+$/, "");
   const pageUrl = `${site}/result/${figureId}`;
   const name = esc(petName);
+
+  const withdrawalLine =
+    "Your figure was delivered instantly, so the 14-day cancellation period ended when you unlocked it, as noted before checkout.";
 
   const html = `<!doctype html>
 <html>
@@ -66,7 +72,14 @@ export async function sendFigureUnlockedEmail({
             </p>
             <p style="margin:0;font-size:13px;line-height:1.5;color:#555">
               You can download it again from that page any time, on any device.
-            </p>
+            </p>${
+              withdrawalNotice
+                ? `
+            <p style="margin:16px 0 0;padding-top:12px;border-top:1px solid #e5e5e5;font-size:12px;line-height:1.5;color:#555">
+              ${withdrawalLine}
+            </p>`
+                : ""
+            }
           </td></tr>
         </table>
         <p style="font-size:12px;color:#666;margin:16px 0 0">PetFigure · You're receiving this because you bought a figure.</p>
@@ -80,7 +93,7 @@ export async function sendFigureUnlockedEmail({
 Thanks for your order! Your HD action figure of ${petName} is attached to this email.
 
 View your figure: ${pageUrl}
-You can download it again from that page any time, on any device.`;
+You can download it again from that page any time, on any device.${withdrawalNotice ? `\n\n${withdrawalLine}` : ""}`;
 
   const attachment = await hdAttachment(hdPath, petName);
 
