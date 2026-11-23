@@ -109,7 +109,7 @@ export const PRESETS: AccessoryPack[] = [
   },
   {
     id: "dragon-tamer",
-    label: "Dragon Tamer",
+    label: "Dragon",
     emoji: "🐉",
     category: "fantasy",
     tagline: "Dragon Rider",
@@ -241,7 +241,7 @@ export const PRESETS: AccessoryPack[] = [
   },
   {
     id: "witch",
-    label: "Halloween Witch",
+    label: "Halloween",
     emoji: "🎃",
     category: "seasonal",
     tagline: "Spooky Season",
