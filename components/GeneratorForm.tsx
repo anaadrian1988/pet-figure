@@ -223,16 +223,18 @@ export default function GeneratorForm() {
           <span className="flex flex-col items-center gap-2 px-6 text-center">
             <span className="text-4xl">📸</span>
             <span className="font-semibold">Tap to add a photo</span>
-            <span className="text-xs text-ink/60">Then drag &amp; zoom to fit your pet</span>
+            {/* A photo error takes the hint line's place (never drawn over it). */}
+            {photoError ? (
+              <span
+                role="alert"
+                className="rounded-full bg-toy-red px-3 py-1 text-xs font-bold text-white shadow-[2px_2px_0_#141414]"
+              >
+                {photoError}
+              </span>
+            ) : (
+              <span className="text-xs text-ink/60">Then drag &amp; zoom to fit your pet</span>
+            )}
           </span>
-          {photoError && (
-            <span
-              role="alert"
-              className="pointer-events-none absolute bottom-2.5 left-1/2 w-max max-w-[86%] -translate-x-1/2 rounded-full bg-toy-red px-3 py-1 text-center text-xs font-bold text-white shadow-[2px_2px_0_#141414]"
-            >
-              {photoError}
-            </span>
-          )}
         </button>
       )}
       </div>
