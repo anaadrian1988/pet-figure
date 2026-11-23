@@ -214,7 +214,7 @@ export default function GeneratorForm() {
           <span className="flex flex-col items-center gap-2 px-6 text-center">
             <span className="text-4xl">📸</span>
             <span className="font-semibold">Tap to add a photo</span>
-            <span className="text-xs text-ink/60">Then drag it so your pet&apos;s face is in the oval</span>
+            <span className="text-xs text-ink/60">Then drag &amp; zoom to fit your pet</span>
           </span>
         </button>
       )}
