@@ -17,6 +17,8 @@ type Props = {
   onChange: (f: Framing) => void;
   /** Called with the image's natural size once loaded, or null if the browser can't show it (e.g. HEIC). */
   onLoad: (size: { w: number; h: number } | null) => void;
+  /** Photo-related error, shown in place of the hint. */
+  error?: string | null;
 };
 
 /** Fraction of the image visible across the frame, for a given zoom. */
@@ -42,7 +44,7 @@ function clamp(f: Framing, nat: { w: number; h: number }): Framing {
  * Lets the user drag and zoom their photo so the pet's face sits inside the guide.
  * Mouse drag, touch drag, pinch, mouse wheel and the slider all work.
  */
-export default function PhotoFramer({ src, framing, onChange, onLoad }: Props) {
+export default function PhotoFramer({ src, framing, onChange, onLoad, error }: Props) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [nat, setNat] = useState<{ w: number; h: number } | null>(null);
   const [frameW, setFrameW] = useState(0);
@@ -180,9 +182,18 @@ export default function PhotoFramer({ src, framing, onChange, onLoad }: Props) {
             <path d="M378 432 L378 478 L332 478" />
           </g>
         </svg>
-        <p className="pointer-events-none absolute bottom-7 left-1/2 w-max max-w-[80%] -translate-x-1/2 rounded-full bg-black/55 px-2.5 py-1 text-center text-xs font-bold text-white">
-          Drag &amp; zoom to fit your pet
-        </p>
+        {error ? (
+          <p
+            role="alert"
+            className="pointer-events-none absolute bottom-7 left-1/2 w-max max-w-[80%] -translate-x-1/2 rounded-full bg-toy-red px-3 py-1 text-center text-xs font-bold text-white shadow-[2px_2px_0_#141414]"
+          >
+            {error}
+          </p>
+        ) : (
+          <p className="pointer-events-none absolute bottom-7 left-1/2 w-max max-w-[80%] -translate-x-1/2 rounded-full bg-black/55 px-2.5 py-1 text-center text-xs font-bold text-white">
+            Drag &amp; zoom to fit your pet
+          </p>
+        )}
       </div>
 
       <label className="mt-3 flex items-center gap-3 text-xs font-bold">

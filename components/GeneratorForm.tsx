@@ -68,20 +68,25 @@ export default function GeneratorForm() {
     progressRef.current.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
   }, [busy]);
 
-  // Error messages sit near the bottom of the form, often off-screen (e.g. after the progress
-  // card disappears), so scroll each one into view. The counter re-triggers this even when
-  // the same message is shown twice in a row.
-  const errorRef = useRef<HTMLParagraphElement>(null);
+  // Photo errors show at the photo; all others float above the button. Neither takes extra
+  // space, so nothing below the form moves. Each error scrolls its spot into view; the counter
+  // re-triggers this even when the same message is shown twice in a row.
+  const [errorAt, setErrorAt] = useState<"photo" | "button">("button");
+  const photoAreaRef = useRef<HTMLDivElement>(null);
+  const buttonErrorRef = useRef<HTMLParagraphElement>(null);
   const [errorCount, setErrorCount] = useState(0);
-  function fail(message: string) {
+  function fail(message: string, at: "photo" | "button" = "button") {
     setError(message);
+    setErrorAt(at);
     setErrorCount((n) => n + 1);
   }
   useEffect(() => {
-    if (!errorCount || !errorRef.current) return;
+    const target = errorAt === "photo" ? photoAreaRef.current : buttonErrorRef.current;
+    if (!errorCount || !target) return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    errorRef.current.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-  }, [errorCount]);
+    target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  }, [errorCount, errorAt]);
+  const photoError = error && errorAt === "photo" ? error : null;
 
   // Next.js keeps this page alive (hidden) after navigating to the result page, so the
   // "building" state would still be showing when the user comes back. Once a generation
@@ -103,8 +108,8 @@ export default function GeneratorForm() {
   function pickFile(f: File | undefined) {
     setError(null);
     if (!f) return;
-    if (!f.type.startsWith("image/")) return fail("That doesn't look like a photo.");
-    if (f.size > MAX_ORIGINAL_BYTES) return fail("Photo must be under 25 MB.");
+    if (!f.type.startsWith("image/")) return fail("That doesn't look like a photo.", "photo");
+    if (f.size > MAX_ORIGINAL_BYTES) return fail("Photo must be under 25 MB.", "photo");
     setFraming(DEFAULT_FRAMING);
     setPhotoSize(null);
     setFile(f);
@@ -117,16 +122,16 @@ export default function GeneratorForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!file) return fail("Add a photo of your pet first.");
+    if (!file) return fail("Add a photo of your pet first.", "photo");
     if (!petName.trim()) return fail("What's your pet's name?");
     if (!preset) return fail("Pick an accessory pack.");
-    if (!photoSize || !previewSrc) return fail("Your photo is still loading. Try again in a second.");
+    if (!photoSize || !previewSrc) return fail("Your photo is still loading. Try again in a second.", "photo");
 
     // Send only the framed area; fall back to the original if this browser can't crop it.
     const cropped = photoSize === "unsupported" ? null : await cropToFile(previewSrc, photoSize, framing);
     const photo = cropped ?? file;
     if (!cropped && photo.size > MAX_UPLOAD_BYTES) {
-      return fail("This photo is too large to send as-is. Try a JPG or PNG under 10 MB.");
+      return fail("This photo is too large to send as-is. Try a JPG or PNG under 10 MB.", "photo");
     }
 
     const body = new FormData();
@@ -177,6 +182,7 @@ export default function GeneratorForm() {
   return (
     <form onSubmit={onSubmit} className="rounded-3xl border-4 border-ink bg-white p-5 toy-shadow-lg sm:p-7">
       {/* Step 1: photo */}
+      <div ref={photoAreaRef}>
       <label className="mb-2 block font-display text-sm">1 · Upload your pet</label>
       {previewSrc ? (
         <div>
@@ -186,6 +192,7 @@ export default function GeneratorForm() {
             framing={framing}
             onChange={setFraming}
             onLoad={(size) => setPhotoSize(size ?? "unsupported")}
+            error={photoError}
           />
           {photoSize === "unsupported" && (
             <p className="mt-2 text-xs text-ink/70">
@@ -209,15 +216,26 @@ export default function GeneratorForm() {
             e.preventDefault();
             pickFile(e.dataTransfer.files?.[0]);
           }}
-          className="flex aspect-[4/3] w-full items-center md:aspect-auto md:h-[150px] justify-center overflow-hidden rounded-2xl border-4 border-dashed border-ink/40 bg-cream halftone transition hover:border-ink"
+          className={`relative flex aspect-[4/3] w-full items-center md:aspect-auto md:h-[150px] justify-center overflow-hidden rounded-2xl border-4 border-dashed bg-cream halftone transition hover:border-ink ${
+            photoError ? "border-toy-red" : "border-ink/40"
+          }`}
         >
           <span className="flex flex-col items-center gap-2 px-6 text-center">
             <span className="text-4xl">📸</span>
             <span className="font-semibold">Tap to add a photo</span>
             <span className="text-xs text-ink/60">Then drag &amp; zoom to fit your pet</span>
           </span>
+          {photoError && (
+            <span
+              role="alert"
+              className="pointer-events-none absolute bottom-2.5 left-1/2 w-max max-w-[86%] -translate-x-1/2 rounded-full bg-toy-red px-3 py-1 text-center text-xs font-bold text-white shadow-[2px_2px_0_#141414]"
+            >
+              {photoError}
+            </span>
+          )}
         </button>
       )}
+      </div>
       <input
         ref={fileInput}
         type="file"
@@ -329,22 +347,23 @@ export default function GeneratorForm() {
         </div>
       </fieldset>
 
-      {error && (
-        <p
-          ref={errorRef}
-          className="mt-5 rounded-xl border-2 border-toy-red bg-toy-red/10 px-4 py-3 text-sm font-semibold text-toy-red"
-          role="alert"
+      <div className="relative mt-6">
+        {error && errorAt === "button" && (
+          <p
+            ref={buttonErrorRef}
+            role="alert"
+            className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-max max-w-[92%] -translate-x-1/2 rounded-full bg-toy-red px-3 py-1.5 text-center text-xs font-bold text-white shadow-[2px_2px_0_#141414]"
+          >
+            {error}
+          </p>
+        )}
+        <button
+          type="submit"
+          className="cursor-paw w-full rounded-2xl border-4 border-ink bg-toy-red px-6 py-4 font-display text-lg text-white toy-shadow transition active:translate-x-1 active:translate-y-1 active:shadow-none"
         >
-          {error}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        className="cursor-paw mt-6 w-full rounded-2xl border-4 border-ink bg-toy-red px-6 py-4 font-display text-lg text-white toy-shadow transition active:translate-x-1 active:translate-y-1 active:shadow-none"
-      >
-        Make my figure, free →
-      </button>
+          Make my figure, free →
+        </button>
+      </div>
       <p className="mt-3 text-center text-xs text-ink/60">Free preview · No sign-up · 2 free tries per day</p>
     </form>
   );
