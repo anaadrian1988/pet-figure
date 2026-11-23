@@ -93,6 +93,8 @@ export default function GeneratorForm() {
     };
   }, []);
 
+  // An error message describes the last attempt; any change to the form clears it
+  // (it shows again on the next submit if the problem is still there).
   function pickFile(f: File | undefined) {
     setError(null);
     if (!f) return;
@@ -230,7 +232,10 @@ export default function GeneratorForm() {
           <input
             id="petName"
             value={petName}
-            onChange={(e) => setPetName(e.target.value)}
+            onChange={(e) => {
+              setPetName(e.target.value);
+              setError(null);
+            }}
             maxLength={20}
             placeholder="Biscuit"
             autoComplete="off"
@@ -244,7 +249,10 @@ export default function GeneratorForm() {
           <input
             id="age"
             value={age}
-            onChange={(e) => setAge(e.target.value)}
+            onChange={(e) => {
+              setAge(e.target.value);
+              setError(null);
+            }}
             maxLength={6}
             inputMode="numeric"
             placeholder="3"
@@ -265,7 +273,10 @@ export default function GeneratorForm() {
               type="button"
               role="tab"
               aria-selected={tab === t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                setTab(t.id);
+                setError(null);
+              }}
               className={`truncate rounded-full border-2 px-1 py-1 text-center text-[11px] font-bold transition lg:px-2 lg:text-xs ${
                 tab === t.id ? "border-ink bg-ink text-white" : "border-ink/20 bg-white hover:border-ink/60"
               }`}
@@ -288,7 +299,10 @@ export default function GeneratorForm() {
                 name="preset"
                 value={p.id}
                 checked={preset === p.id}
-                onChange={() => setPreset(p.id)}
+                onChange={() => {
+                  setPreset(p.id);
+                  setError(null);
+                }}
                 className="sr-only"
               />
               <span className="text-2xl" aria-hidden>
