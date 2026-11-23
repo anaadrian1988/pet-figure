@@ -12,6 +12,10 @@ function packsInTab(tab: PackTab) {
     ? POPULAR_PACK_IDS.map((id) => PRESETS.find((p) => p.id === id)!).filter(Boolean)
     : PRESETS.filter((p) => p.category === tab);
 }
+
+/** Tiles in the biggest tab, rounded up to full rows: every tab reserves this many slots,
+ * so the pack area keeps the same height and nothing below it moves when switching tabs. */
+const PACK_SLOTS = Math.ceil(Math.max(...PACK_TABS.map((t) => packsInTab(t.id).length)) / 3) * 3;
 import PhotoFramer, { cropToFile, DEFAULT_FRAMING, type Framing } from "@/components/PhotoFramer";
 import { rememberFigure } from "@/lib/myFigures";
 
@@ -281,7 +285,7 @@ export default function GeneratorForm() {
                 setTab(t.id);
                 setError(null);
               }}
-              className={`truncate rounded-full border-2 px-1 py-1 text-center text-[11px] font-bold transition lg:px-2 lg:text-xs ${
+              className={`truncate rounded-full border-2 px-0.5 py-1 text-center text-[10px] font-bold tracking-tight transition min-[375px]:px-1 min-[375px]:text-[11px] min-[375px]:tracking-normal lg:px-2 lg:text-xs ${
                 tab === t.id ? "border-ink bg-ink text-white" : "border-ink/20 bg-white hover:border-ink/60"
               }`}
             >
@@ -314,6 +318,13 @@ export default function GeneratorForm() {
               </span>
               {p.label}
             </label>
+          ))}
+          {/* Invisible placeholders keep smaller tabs as tall as the biggest one. */}
+          {Array.from({ length: PACK_SLOTS - packsInTab(tab).length }, (_, i) => (
+            <div key={`slot-${i}`} aria-hidden className="invisible flex flex-col items-center gap-1 rounded-xl border-4 px-1 py-3 text-xs font-bold">
+              <span className="text-2xl">·</span>
+              ·
+            </div>
           ))}
         </div>
       </fieldset>
