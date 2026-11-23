@@ -38,7 +38,8 @@ export default function GeneratorForm() {
   const [photoSize, setPhotoSize] = useState<{ w: number; h: number } | "unsupported" | null>(null);
   const [petName, setPetName] = useState("");
   const [age, setAge] = useState("");
-  const [preset, setPreset] = useState(PRESETS[0].id);
+  /** Chosen pack id; "" means none (switching category clears it). Starts on the first pack. */
+  const [preset, setPreset] = useState<string>(PRESETS[0].id);
   const [tab, setTab] = useState<PackTab>("popular");
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(0);
@@ -114,6 +115,7 @@ export default function GeneratorForm() {
     setError(null);
     if (!file) return fail("Add a photo of your pet first.");
     if (!petName.trim()) return fail("What's your pet's name?");
+    if (!preset) return fail("Pick an accessory pack.");
     if (!photoSize || !previewSrc) return fail("Your photo is still loading. Try again in a second.");
 
     // Send only the framed area; fall back to the original if this browser can't crop it.
@@ -274,6 +276,8 @@ export default function GeneratorForm() {
               role="tab"
               aria-selected={tab === t.id}
               onClick={() => {
+                // Switching category clears the pick, so only a pack visible in this tab can be selected.
+                if (t.id !== tab) setPreset("");
                 setTab(t.id);
                 setError(null);
               }}
