@@ -162,19 +162,26 @@ export default function PhotoFramer({ src, framing, onChange, onLoad }: Props) {
           onError={() => onLoad(null)}
         />
 
-        {/* Face guide: dims everything outside an oval in the upper-middle of the frame */}
+        {/* Frame guide: four corner brackets. The whole frame is what gets sent, so the pet
+            just needs to fill it; there's no spot the face has to hit. */}
         <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 400 500" preserveAspectRatio="none" aria-hidden>
-          <defs>
-            <mask id="face-hole">
-              <rect width="400" height="500" fill="white" />
-              <ellipse cx="200" cy="215" rx="120" ry="140" fill="black" />
-            </mask>
-          </defs>
-          <rect width="400" height="500" fill="rgba(0,0,0,0.38)" mask="url(#face-hole)" />
-          <ellipse cx="200" cy="215" rx="120" ry="140" fill="none" stroke="white" strokeWidth="3" strokeDasharray="10 8" />
+          <g
+            fill="none"
+            stroke="white"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.95"
+            style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))" }}
+          >
+            <path d="M22 68 L22 22 L68 22" />
+            <path d="M378 68 L378 22 L332 22" />
+            <path d="M22 432 L22 478 L68 478" />
+            <path d="M378 432 L378 478 L332 478" />
+          </g>
         </svg>
-        <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-xs font-bold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">
-          Drag to put your pet&apos;s face in the oval
+        <p className="pointer-events-none absolute bottom-7 left-1/2 w-max max-w-[80%] -translate-x-1/2 rounded-full bg-black/55 px-2.5 py-1 text-center text-xs font-bold text-white">
+          Drag &amp; zoom to fit your pet
         </p>
       </div>
 
