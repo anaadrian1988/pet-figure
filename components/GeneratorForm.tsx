@@ -209,7 +209,7 @@ export default function GeneratorForm() {
             e.preventDefault();
             pickFile(e.dataTransfer.files?.[0]);
           }}
-          className="flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-2xl border-4 border-dashed border-ink/40 bg-cream halftone transition hover:border-ink"
+          className="flex aspect-[4/3] w-full items-center md:aspect-auto md:h-[150px] justify-center overflow-hidden rounded-2xl border-4 border-dashed border-ink/40 bg-cream halftone transition hover:border-ink"
         >
           <span className="flex flex-col items-center gap-2 px-6 text-center">
             <span className="text-4xl">📸</span>
