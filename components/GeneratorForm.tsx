@@ -227,12 +227,13 @@ export default function GeneratorForm() {
             {photoError ? (
               <span
                 role="alert"
-                className="rounded-full bg-toy-red px-3 py-1 text-xs font-bold text-white shadow-[2px_2px_0_#141414]"
+                className="flex h-6 items-center rounded-full bg-toy-red px-3 text-xs font-bold text-white shadow-[2px_2px_0_#141414]"
               >
                 {photoError}
               </span>
             ) : (
-              <span className="text-xs text-ink/60">Then drag &amp; zoom to fit your pet</span>
+              // Same height as the error pill, so swapping them doesn't shift the text above.
+              <span className="flex h-6 items-center text-xs text-ink/60">Then drag &amp; zoom to fit your pet</span>
             )}
           </span>
         </button>
